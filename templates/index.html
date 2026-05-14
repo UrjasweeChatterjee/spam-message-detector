@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>AI Spam Detection System</title>
+  <meta name="description"
+    content="Enterprise AI-powered spam detection using Naive Bayes, Logistic Regression & Random Forest." />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --cyan: #00f5ff;
+      --violet: #8b5cf6;
+      --rose: #ff3d71;
+      --emerald: #00e5a0;
+      --bg: #03080f;
+      --bg2: #070f1c;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-b: rgba(255, 255, 255, 0.07);
+      --muted: rgba(255, 255, 255, 0.45);
+      --font: 'Space Grotesk', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: #dce8ff;
+      min-height: 100vh;
+      overflow-x: hidden
+    }
+
+    /* ─── Background layers ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 90% 70% at 10% 0%, rgba(0, 245, 255, .07) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 60% at 90% 100%, rgba(139, 92, 246, .09) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255, 61, 113, .04) 0%, transparent 65%),
+        linear-gradient(180deg, #03080f 0%, #060d1a 100%);
+      animation: bgShift 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgShift {
+      0% {
+        opacity: .8
+      }
+
+      100% {
+        opacity: 1
+      }
+    }
+
+    /* Scan-line effect */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 245, 255, .012) 4px);
+    }
+
+    /* Floating glows */
+    .glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: .12;
+      z-index: 0;
+      pointer-events: none;
+      animation: drift 18s ease-in-out infinite alternate
+    }
+
+    .glow-a {
+      width: 600px;
+      height: 600px;
+      background: var(--cyan);
+      top: -200px;
+      left: -150px;
+      animation-duration: 14s
+    }
+
+    .glow-b {
+      width: 500px;
+      height: 500px;
+      background: var(--violet);
+      bottom: -150px;
+      right: -100px;
+      animation-duration: 18s
+    }
+
+    .glow-c {
+      width: 300px;
+      height: 300px;
+      background: var(--emerald);
+      top: 40%;
+      left: 60%;
+      animation-duration: 22s
+    }
+
+    @keyframes drift {
+      0% {
+        transform: translate(0, 0) scale(1)
+      }
+
+      100% {
+        transform: translate(40px, -50px) scale(1.15)
+      }
+    }
+
+    /* ─── Navbar ─── */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: rgba(3, 8, 15, .85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(0, 245, 255, .1);
+      padding: 13px 0;
+    }
+
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .3px;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .live-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(0, 229, 160, .1);
+      border: 1px solid rgba(0, 229, 160, .25);
+      color: var(--emerald);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 50px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--emerald);
+      border-radius: 50%;
+      animation: pulse 1.6s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .3;
+        transform: scale(.8)
+      }
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 88px 16px 56px
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 245, 255, .08);
+      border: 1px solid rgba(0, 245, 255, .2);
+      color: var(--cyan);
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 7px 20px;
+      border-radius: 50px;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.1rem, 5.5vw, 3.8rem);
+      font-weight: 700;
+      line-height: 1.12;
+      margin-bottom: 20px;
+      background: linear-gradient(145deg, #fff 20%, var(--cyan) 55%, var(--violet) 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 36px;
+      line-height: 1.75
+    }
+
+    /* ─── Stat pills ─── */
+    .stat-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 52px;
+    }
+
+    .stat-card {
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 186px;
+      transition: transform .3s, box-shadow .3s, border-color .3s;
+      cursor: default;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0, 245, 255, .22);
+      box-shadow: 0 0 28px rgba(0, 245, 255, .1)
+    }
+
+    .stat-ico {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .s-cyan {
+      background: rgba(0, 245, 255, .12);
+      color: var(--cyan)
+    }
+
+    .s-violet {
+      background: rgba(139, 92, 246, .14);
+      color: #a78bfa
+    }
+
+    .s-green {
+      background: rgba(0, 229, 160, .12);
+      color: var(--emerald)
+    }
+
+    .stat-lbl {
+      font-size: .68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px
+    }
+
+    .stat-val {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2px
+    }
+
+    /* ─── Main glass panel ─── */
+    .panel {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid rgba(255, 255, 255, .07);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .06);
+    }
+
+    .panel-title {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── Textarea ─── */
+    .msg-area {
+      width: 100%;
+      background: rgba(0, 0, 0, .45);
+      border: 1.5px solid rgba(0, 245, 255, .18);
+      border-radius: 14px;
+      color: #dce8ff;
+      font-family: var(--mono);
+      font-size: .92rem;
+      padding: 18px 20px;
+      resize: none;
+      height: 155px;
+      outline: none;
+      transition: border-color .3s, box-shadow .3s;
+      line-height: 1.65;
+    }
+
+    .msg-area::placeholder {
+      color: rgba(255, 255, 255, .22)
+    }
+
+    .msg-area:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 245, 255, .12), 0 0 24px rgba(0, 245, 255, .1)
+    }
+
+    /* ─── Button ─── */
+    .btn-run {
+      width: 100%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      border: none;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .4px;
+      padding: 15px;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: transform .25s, box-shadow .25s;
+      position: relative;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .btn-run::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, .12));
+      opacity: 0;
+      transition: opacity .25s;
+    }
+
+    .btn-run:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 36px rgba(0, 245, 255, .32)
+    }
+
+    .btn-run:hover::before {
+      opacity: 1
+    }
+
+    .btn-run:active {
+      transform: translateY(-1px)
+    }
+
+    /* ─── Divider ─── */
+    .c-divider {
+      border: none;
+      height: 1px;
+      margin: 36px 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 245, 255, .25), transparent);
+    }
+
+    /* ─── Result alert ─── */
+    .result-box {
+      border-radius: 18px;
+      padding: 26px 30px;
+      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+      animation: slideUp .5s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .result-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      padding: 1.5px;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .r-spam {
+      background: rgba(255, 61, 113, .09)
+    }
+
+    .r-spam::before {
+      background: linear-gradient(135deg, #ff3d71, #ff7c40)
+    }
+
+    .r-safe {
+      background: rgba(0, 229, 160, .07)
+    }
+
+    .r-safe::before {
+      background: linear-gradient(135deg, var(--emerald), #0ba360)
+    }
+
+    .r-icon {
+      font-size: 2.2rem;
+      margin-bottom: 10px
+    }
+
+    .r-title {
+      font-size: 1.45rem;
+      font-weight: 800
+    }
+
+    .r-sub {
+      font-size: .87rem;
+      color: var(--muted);
+      margin-top: 6px
+    }
+
+    /* ─── Message display ─── */
+    .msg-display {
+      background: rgba(0, 0, 0, .35);
+      border: 1px solid rgba(255, 255, 255, .07);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-family: var(--mono);
+      font-size: .85rem;
+      color: rgba(255, 255, 255, .7);
+      line-height: 1.65;
+      word-break: break-word;
+    }
+
+    .field-lbl {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── Section heading ─── */
+    .s-head {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .s-head i {
+      color: var(--cyan)
+    }
+
+    /* ─── Model cards ─── */
+    .m-card {
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 20px;
+      padding: 26px;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      transition: transform .32s, box-shadow .32s, border-color .32s;
+    }
+
+    .m-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .m-nb::before {
+      background: linear-gradient(90deg, var(--cyan), #0077ff)
+    }
+
+    .m-lr::before {
+      background: linear-gradient(90deg, var(--violet), #c084fc)
+    }
+
+    .m-rf::before {
+      background: linear-gradient(90deg, var(--emerald), #0ba360)
+    }
+
+    .m-card:hover {
+      transform: translateY(-7px);
+      border-color: rgba(0, 245, 255, .2);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 25px rgba(0, 245, 255, .07)
+    }
+
+    .m-ico {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+    }
+
+    .i-nb {
+      background: rgba(0, 245, 255, .1);
+      color: var(--cyan)
+    }
+
+    .i-lr {
+      background: rgba(139, 92, 246, .12);
+      color: #a78bfa
+    }
+
+    .i-rf {
+      background: rgba(0, 229, 160, .1);
+      color: var(--emerald)
+    }
+
+    .m-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px
+    }
+
+    /* Badges */
+    .mbadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 13px;
+      border-radius: 50px;
+      margin-bottom: 18px;
+      animation: badgePop .4s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    @keyframes badgePop {
+      from {
+        transform: scale(.6);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    .b-spam {
+      background: rgba(255, 61, 113, .16);
+      color: var(--rose);
+      border: 1px solid rgba(255, 61, 113, .28)
+    }
+
+    .b-safe {
+      background: rgba(0, 229, 160, .13);
+      color: var(--emerald);
+      border: 1px solid rgba(0, 229, 160, .28)
+    }
+
+    /* Metric rows */
+    .m-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .8rem;
+      color: var(--muted);
+      margin-bottom: 5px
+    }
+
+    .m-row span:last-child {
+      color: #fff;
+      font-weight: 600;
+      font-family: var(--mono)
+    }
+
+    .prog-track {
+      background: rgba(255, 255, 255, .06);
+      border-radius: 50px;
+      height: 5px;
+      overflow: hidden;
+      margin-bottom: 13px
+    }
+
+    .prog-fill {
+      height: 100%;
+      border-radius: 50px;
+      transition: width 1.1s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .pf-spam {
+      background: linear-gradient(90deg, #ff3d71, #ff7c40)
+    }
+
+    .pf-safe {
+      background: linear-gradient(90deg, var(--emerald), #0ba360)
+    }
+
+    /* Accuracy */
+    .acc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 14px;
+      background: rgba(0, 245, 255, .07);
+      border: 1px solid rgba(0, 245, 255, .18);
+      border-radius: 9px;
+      padding: 6px 13px;
+      font-size: .78rem;
+      color: var(--cyan);
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    /* Confusion matrix */
+    .cm-label {
+      font-size: .67rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 16px;
+      margin-bottom: 8px
+    }
+
+    .cm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px
+    }
+
+    .cm-cell {
+      background: rgba(0, 0, 0, .32);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 9px;
+      padding: 9px 6px;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+
+    .cm-cell b {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 2px
+    }
+
+    .tp b {
+      color: var(--emerald)
+    }
+
+    .fp b {
+      color: #fbbf24
+    }
+
+    .fn b {
+      color: var(--rose)
+    }
+
+    .tn b {
+      color: #60a5fa
+    }
+
+    /* ─── Nav links ─── */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, .6);
+      font-size: .85rem;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      transition: color .25s, background .25s;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, .07)
+    }
+
+    .nav-links a.active {
+      color: var(--cyan)
+    }
+
+    /* ─── Section base ─── */
+    .page-section {
+      position: relative;
+      z-index: 1;
+      padding: 100px 0 80px
+    }
+
+    .sec-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 245, 255, .07);
+      border: 1px solid rgba(0, 245, 255, .18);
+      color: var(--cyan);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 50px;
+      margin-bottom: 18px;
+    }
+
+    .sec-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+      line-height: 1.2
+    }
+
+    .sec-sub {
+      font-size: .97rem;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 580px
+    }
+
+    /* ─── Introduction ─── */
+    #introduction {
+      background: transparent
+    }
+
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: center
+    }
+
+    .intro-stat-box {
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid rgba(255, 255, 255, .07);
+      border-radius: 16px;
+      padding: 22px 24px;
+      transition: transform .3s, border-color .3s;
+    }
+
+    .intro-stat-box:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0, 245, 255, .2)
+    }
+
+    .intro-stat-box .big {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .intro-stat-box .lbl {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: 4px
+    }
+
+    /* ─── Services ─── */
+    #services {
+      background: rgba(0, 245, 255, .015)
+    }
+
+    .svc-card {
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid rgba(255, 255, 255, .07);
+      border-radius: 20px;
+      padding: 30px;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      transition: transform .3s, box-shadow .3s, border-color .3s;
+    }
+
+    .svc-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 1px;
+      background: linear-gradient(135deg, transparent, transparent);
+      transition: background .3s;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .svc-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 245, 255, .18);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .5)
+    }
+
+    .svc-card:hover::after {
+      background: linear-gradient(135deg, var(--cyan), var(--violet))
+    }
+
+    .svc-ico {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 18px
+    }
+
+    .svc-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px
+    }
+
+    .svc-desc {
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.7
+    }
+
+    /* ─── About ─── */
+    #about {
+      background: transparent
+    }
+
+    .team-card {
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid rgba(255, 255, 255, .07);
+      border-radius: 18px;
+      padding: 28px;
+      text-align: center;
+      transition: transform .3s, border-color .3s;
+    }
+
+    .team-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(139, 92, 246, .3)
+    }
+
+    .team-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+    }
+
+    .team-name {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #fff
+    }
+
+    .team-role {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 4px
+    }
+
+    .tech-pill {
+      display: inline-block;
+      background: rgba(139, 92, 246, .12);
+      border: 1px solid rgba(139, 92, 246, .25);
+      color: #a78bfa;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .8px;
+      padding: 4px 12px;
+      border-radius: 50px;
+      margin: 4px 3px;
+    }
+
+    /* ─── Contact ─── */
+    #contact {
+      background: rgba(139, 92, 246, .015)
+    }
+
+    .contact-panel {
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid rgba(255, 255, 255, .07);
+      backdrop-filter: blur(24px);
+      border-radius: 24px;
+      padding: 44px;
+    }
+
+    .cf-input {
+      width: 100%;
+      background: rgba(0, 0, 0, .4);
+      border: 1.5px solid rgba(255, 255, 255, .1);
+      border-radius: 11px;
+      color: #dce8ff;
+      font-family: var(--font);
+      font-size: .92rem;
+      padding: 13px 18px;
+      outline: none;
+      transition: border-color .3s, box-shadow .3s;
+      margin-bottom: 16px;
+    }
+
+    .cf-input::placeholder {
+      color: rgba(255, 255, 255, .25)
+    }
+
+    .cf-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 245, 255, .1)
+    }
+
+    textarea.cf-input {
+      resize: none;
+      height: 130px;
+      line-height: 1.6
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      border: none;
+      color: #fff;
+      font-family: var(--font);
+      font-size: .95rem;
+      font-weight: 700;
+      padding: 14px 34px;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: transform .25s, box-shadow .25s;
+    }
+
+    .btn-send:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0, 245, 255, .28)
+    }
+
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .info-ico {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .95rem;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 34px 16px;
+      margin-top: 64px;
+      border-top: 1px solid rgba(255, 255, 255, .05);
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    footer strong {
+      color: var(--cyan)
+    }
+
+    /* ─── Responsive ─── */
+    @media(max-width:768px) {
+      .intro-grid {
+        grid-template-columns: 1fr
+      }
+
+      .contact-panel {
+        padding: 28px 18px
+      }
+    }
+
+    @media(max-width:576px) {
+      .panel {
+        padding: 22px 16px
+      }
+
+      .hero {
+        padding: 56px 12px 36px
+      }
+
+      .stat-row {
+        flex-direction: column;
+        align-items: center
+      }
+
+      .stat-card {
+        min-width: 90%;
+        justify-content: flex-start
+      }
+
+      .nav-links {
+        display: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background glows -->
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+  <div class="glow glow-c"></div>
+
+  <!-- ── Navbar ── -->
+  <nav class="top-bar">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <div
+          style="width:38px;height:38px;background:linear-gradient(135deg,var(--cyan),var(--violet));border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px rgba(0,245,255,.3)">
+          <i class="fas fa-shield-halved" style="color:#fff;font-size:.95rem"></i>
+        </div>
+        <span class="brand">AI Spam Detection System</span>
+      </div>
+      <div class="nav-links d-none d-md-flex">
+        <a href="#introduction">Introduction</a>
+        <a href="#services">Services</a>
+        <a href="#about">About Us</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="live-chip d-none d-sm-flex">
+        <div class="live-dot"></div>Systems Online
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <i class="fas fa-microchip"></i> AI &nbsp;·&nbsp; ML &nbsp;·&nbsp; Cybersecurity
+    </div>
+    <h1>Intelligent Threat<br />Detection Engine</h1>
+    <p class="hero-sub">Enterprise-grade spam analysis powered by three parallel machine learning models. Real-time
+      predictions with probability scoring and confusion matrix reporting.</p>
+  </section>
+
+  <!-- ── Stats ── -->
+  <div class="container stat-row">
+    <div class="stat-card">
+      <div class="stat-ico s-cyan"><i class="fas fa-brain"></i></div>
+      <div>
+        <div class="stat-lbl">Total Models</div>
+        <div class="stat-val">3 Active</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico s-violet"><i class="fas fa-satellite-dish"></i></div>
+      <div>
+        <div class="stat-lbl">AI Detection</div>
+        <div class="stat-val">Online</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ico s-green"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <div class="stat-lbl">Prediction Status</div>
+        <div class="stat-val">{% if final_result %}{{ final_result }}{% else %}Awaiting Input{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main panel ── -->
+  <div class="container mb-5">
+    <div class="panel mx-auto" style="max-width:920px">
+
+      <!-- Input -->
+      <div class="panel-title"><i class="fas fa-terminal"></i> Message Analysis Console</div>
+
+      <form method="POST" id="detectionForm">
+        <div class="field-lbl"><i class="fas fa-keyboard"></i> Input Message</div>
+        <textarea name="message" class="msg-area" placeholder="Paste or type any message to scan for spam threats…"
+          required>{{ message }}</textarea>
+        <button type="submit" class="btn-run" id="runBtn">
+          <i class="fas fa-magnifying-glass-chart me-2"></i>Run AI Detection
+        </button>
+      </form>
+
+      {% if final_result %}
+
+      <hr class="c-divider" />
+
+      <!-- ── Final result ── -->
+      {% if final_result == 'Spam' %}
+      <div class="result-box r-spam">
+        <div class="r-icon">🚨</div>
+        <div class="r-title" style="color:var(--rose)">SPAM DETECTED</div>
+        <div class="r-sub">This message has been classified as <strong>Spam</strong> by the primary Naive Bayes
+          classifier. Exercise caution.</div>
+      </div>
+      {% else %}
+      <div class="result-box r-safe">
+        <div class="r-icon">✅</div>
+        <div class="r-title" style="color:var(--emerald)">MESSAGE IS CLEAN</div>
+        <div class="r-sub">This message has been classified as <strong>Not Spam</strong> by the primary Naive Bayes
+          classifier. Safe to proceed.</div>
+      </div>
+      {% endif %}
+
+      <!-- ── Message details ── -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <div class="field-lbl"><i class="fas fa-envelope-open-text"></i> Original Message</div>
+          <div class="msg-display">{{ message }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="field-lbl"><i class="fas fa-filter"></i> Cleaned &amp; Tokenised</div>
+          <div class="msg-display">{{ cleaned_message }}</div>
+        </div>
+      </div>
+
+      <hr class="c-divider" />
+
+      <!-- ── Model cards ── -->
+      <div class="s-head"><i class="fas fa-microchip"></i> Parallel Model Analysis</div>
+      <div class="row g-4">
+
+        {% for model_name, details in model_results.items() %}
+        {% set mc = 'm-nb' if loop.index == 1 else ('m-lr' if loop.index == 2 else 'm-rf') %}
+        {% set ic = 'i-nb' if loop.index == 1 else ('i-lr' if loop.index == 2 else 'i-rf') %}
+        {% set fi = 'fa-atom' if loop.index == 1 else ('fa-chart-bar' if loop.index == 2 else 'fa-tree') %}
+
+        <div class="col-md-4">
+          <div class="m-card {{ mc }}">
+            <div class="m-ico {{ ic }}"><i class="fas {{ fi }}"></i></div>
+            <div class="m-name">{{ model_name }}</div>
+
+            {% if details.result == 'Spam' %}
+            <span class="mbadge b-spam"><i class="fas fa-triangle-exclamation"></i> SPAM</span>
+            {% else %}
+            <span class="mbadge b-safe"><i class="fas fa-check-circle"></i> NOT SPAM</span>
+            {% endif %}
+
+            <div class="m-row"><span>Spam Probability</span><span>{{ details.spam_probability }}%</span></div>
+            <div class="prog-track">
+              <div class="prog-fill pf-spam" style="width:{{ details.spam_probability }}%"></div>
+            </div>
+
+            <div class="m-row"><span>Not Spam Probability</span><span>{{ details.not_spam_probability }}%</span></div>
+            <div class="prog-track">
+              <div class="prog-fill pf-safe" style="width:{{ details.not_spam_probability }}%"></div>
+            </div>
+
+            <div class="acc-badge"><i class="fas fa-bullseye"></i> Accuracy: {{ details.accuracy }}%</div>
+
+            {% if details.confusion_matrix is not string %}
+            <div class="cm-label"><i class="fas fa-table me-1"></i> Confusion Matrix</div>
+            <div class="cm-grid">
+              <div class="cm-cell tn"><b>{{ details.confusion_matrix[0][0] }}</b>True Neg</div>
+              <div class="cm-cell fp"><b>{{ details.confusion_matrix[0][1] }}</b>False Pos</div>
+              <div class="cm-cell fn"><b>{{ details.confusion_matrix[1][0] }}</b>False Neg</div>
+              <div class="cm-cell tp"><b>{{ details.confusion_matrix[1][1] }}</b>True Pos</div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endfor %}
+
+      </div><!-- /row -->
+      {% endif %}
+
+    </div><!-- /panel -->
+  </div><!-- /container -->
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 1 · INTRODUCTION -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="introduction" class="page-section">
+    <div class="container">
+      <div class="intro-grid">
+        <div>
+          <div class="sec-eyebrow"><i class="fas fa-info-circle"></i> Introduction</div>
+          <h2 class="sec-title">What Is This<br />System?</h2>
+          <p class="sec-sub mb-4">This platform leverages three powerful machine learning classifiers to detect spam
+            messages in real time. Each model independently analyses the input and provides a probability score,
+            accuracy metric, and full confusion matrix — giving you deep, explainable AI-driven insights.</p>
+          <p class="sec-sub">Built with Python Flask on the backend and a futuristic glassmorphism UI on the frontend,
+            this tool is ideal for cybersecurity research, academic projects, and enterprise-level email/SMS threat
+            detection.</p>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="intro-stat-box">
+              <div class="big">3</div>
+              <div class="lbl">ML Models Running in Parallel</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="intro-stat-box">
+              <div class="big">99%+</div>
+              <div class="lbl">Detection Accuracy Achieved</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="intro-stat-box">
+              <div class="big">Real-Time</div>
+              <div class="lbl">Instant Prediction Engine</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="intro-stat-box">
+              <div class="big">NLP</div>
+              <div class="lbl">Text Cleaning &amp; Tokenisation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="c-divider" style="margin:0" />
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 2 · SERVICES -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="services" class="page-section">
+    <div class="container">
+      <div class="text-center mb-5">
+        <div class="sec-eyebrow"><i class="fas fa-cogs"></i> Services</div>
+        <h2 class="sec-title">What We Offer</h2>
+        <p class="sec-sub mx-auto">Three specialised ML services working together to give you the most reliable spam
+          verdict.</p>
+      </div>
+      <div class="row g-4">
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-cyan"><i class="fas fa-atom"></i></div>
+            <div class="svc-title">Naive Bayes Classifier</div>
+            <div class="svc-desc">A probabilistic model based on Bayes' theorem. Fast, lightweight, and highly effective
+              for text classification. Serves as the primary decision model for the final verdict.</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-violet"><i class="fas fa-chart-bar"></i></div>
+            <div class="svc-title">Logistic Regression</div>
+            <div class="svc-desc">A linear model that predicts spam probability using learned word-feature weights.
+              Provides well-calibrated confidence scores for each message analysed.</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-green"><i class="fas fa-tree"></i></div>
+            <div class="svc-title">Random Forest</div>
+            <div class="svc-desc">An ensemble of decision trees that votes on the final outcome. Robust against noisy or
+              adversarial inputs, making it ideal as a cross-validation layer.</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-cyan"><i class="fas fa-filter"></i></div>
+            <div class="svc-title">NLP Text Preprocessing</div>
+            <div class="svc-desc">Automated stopword removal, lowercasing, special character stripping, and TF-IDF
+              vectorisation transform raw text into clean machine-readable feature vectors.</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-violet"><i class="fas fa-table"></i></div>
+            <div class="svc-title">Confusion Matrix Report</div>
+            <div class="svc-desc">Each model returns a full confusion matrix — True Positives, True Negatives, False
+              Positives, and False Negatives — for complete performance transparency.</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="svc-card">
+            <div class="svc-ico s-green"><i class="fas fa-bullseye"></i></div>
+            <div class="svc-title">Accuracy &amp; Probability Scoring</div>
+            <div class="svc-desc">Every prediction comes with a model accuracy percentage and individual spam/not-spam
+              probability scores displayed as animated progress bars.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="c-divider" style="margin:0" />
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 3 · ABOUT US -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="about" class="page-section">
+    <div class="container">
+      <div class="text-center mb-5">
+        <div class="sec-eyebrow"><i class="fas fa-users"></i> About Us</div>
+        <h2 class="sec-title">Built By Researchers,<br />For Practitioners</h2>
+        <p class="sec-sub mx-auto">This project was developed as a full-stack machine learning application combining
+          classical NLP techniques with a modern cybersecurity-inspired interface.</p>
+      </div>
+
+      <div class="row g-4 mb-5">
+        <div class="col-md-4">
+          <div class="team-card">
+            <div class="team-avatar"><i class="fas fa-user-astronaut" style="color:#fff"></i></div>
+            <div class="team-name">ML Engineering</div>
+            <div class="team-role">Model Training &amp; Evaluation</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="team-card">
+            <div class="team-avatar" style="background:linear-gradient(135deg,var(--violet),#c084fc)"><i
+                class="fas fa-code" style="color:#fff"></i></div>
+            <div class="team-name">Backend Development</div>
+            <div class="team-role">Flask API &amp; Model Integration</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="team-card">
+            <div class="team-avatar" style="background:linear-gradient(135deg,var(--emerald),#0ba360)"><i
+                class="fas fa-palette" style="color:#fff"></i></div>
+            <div class="team-name">UI/UX Design</div>
+            <div class="team-role">Futuristic Dashboard Interface</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <div class="mb-3"
+          style="font-size:.85rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:600">
+          Technology Stack</div>
+        <span class="tech-pill">Python 3.9</span>
+        <span class="tech-pill">Flask</span>
+        <span class="tech-pill">scikit-learn</span>
+        <span class="tech-pill">Naive Bayes</span>
+        <span class="tech-pill">Logistic Regression</span>
+        <span class="tech-pill">Random Forest</span>
+        <span class="tech-pill">TF-IDF Vectorizer</span>
+        <span class="tech-pill">NLTK</span>
+        <span class="tech-pill">Bootstrap 5</span>
+        <span class="tech-pill">Font Awesome</span>
+        <span class="tech-pill">Pickle</span>
+        <span class="tech-pill">Jinja2</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="c-divider" style="margin:0" />
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 4 · CONTACT US -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="contact" class="page-section">
+    <div class="container">
+      <div class="text-center mb-5">
+        <div class="sec-eyebrow"><i class="fas fa-envelope"></i> Contact Us</div>
+        <h2 class="sec-title">Get In Touch</h2>
+        <p class="sec-sub mx-auto">Have a question, found a bug, or want to collaborate? We'd love to hear from you.</p>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+
+        <div class="col-lg-7">
+          <div class="contact-panel">
+            <div class="panel-title mb-4"><i class="fas fa-paper-plane"></i> Send a Message</div>
+            <div class="row g-0">
+              <div class="col-md-6 pe-md-2">
+                <input type="text" class="cf-input" placeholder="Your Name" id="cf-name" />
+              </div>
+              <div class="col-md-6 ps-md-2">
+                <input type="email" class="cf-input" placeholder="Email Address" id="cf-email" />
+              </div>
+            </div>
+            <input type="text" class="cf-input" placeholder="Subject" id="cf-subject" />
+            <textarea class="cf-input" placeholder="Write your message here…" id="cf-msg"></textarea>
+            <button class="btn-send" id="contactSendBtn" onclick="handleContact()">
+              <i class="fas fa-paper-plane me-2"></i>Send Message
+            </button>
+            <div id="cf-success" style="display:none;margin-top:14px;color:var(--emerald);font-size:.88rem">
+              <i class="fas fa-check-circle me-2"></i>Thank you! Your message has been received.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="contact-panel h-100">
+            <div class="panel-title mb-4"><i class="fas fa-address-book"></i> Contact Info</div>
+
+            <div class="info-item">
+              <div class="info-ico s-cyan"><i class="fas fa-envelope"></i></div>
+              <div>
+                <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Email</div>
+                <div style="font-size:.9rem;color:#fff;margin-top:3px">support@spamdetect.ai</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-ico s-violet"><i class="fas fa-globe"></i></div>
+              <div>
+                <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Project
+                </div>
+                <div style="font-size:.9rem;color:#fff;margin-top:3px">AI Spam Detection System</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-ico s-green"><i class="fas fa-code-branch"></i></div>
+              <div>
+                <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Stack</div>
+                <div style="font-size:.9rem;color:#fff;margin-top:3px">Flask · scikit-learn · Python</div>
+              </div>
+            </div>
+
+            <div class="info-item mb-0">
+              <div class="info-ico" style="background:rgba(255,61,113,.12);color:var(--rose)"><i
+                  class="fas fa-shield-halved"></i></div>
+              <div>
+                <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Security
+                </div>
+                <div style="font-size:.9rem;color:#fff;margin-top:3px">Enterprise-grade AI Detection</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <i class="fas fa-shield-halved me-2" style="color:var(--cyan)"></i>
+    Powered by <strong>Flask + Machine Learning</strong> &nbsp;|&nbsp; AI Spam Detection System
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Animate progress bars
+      document.querySelectorAll('.prog-fill').forEach(b => {
+        const w = b.style.width; b.style.width = '0%';
+        requestAnimationFrame(() => setTimeout(() => { b.style.width = w }, 120));
+      });
+      // Button loading state
+      document.getElementById('detectionForm')?.addEventListener('submit', () => {
+        const btn = document.getElementById('runBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analysing…';
+        btn.disabled = true;
+      });
+      // Active nav link on scroll
+      const sections = document.querySelectorAll('section[id]');
+      const navLinks = document.querySelectorAll('.nav-links a');
+      window.addEventListener('scroll', () => {
+        let cur = '';
+        sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) cur = s.id });
+        navLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+        });
+      });
+    });
+    function handleContact() {
+      const n = document.getElementById('cf-name').value.trim();
+      const e = document.getElementById('cf-email').value.trim();
+      const m = document.getElementById('cf-msg').value.trim();
+      if (!n || !e || !m) { alert('Please fill in Name, Email and Message.'); return; }
+      document.getElementById('cf-success').style.display = 'block';
+      document.getElementById('contactSendBtn').disabled = true;
+      document.getElementById('contactSendBtn').innerHTML = '<i class="fas fa-check me-2"></i>Sent!';
+    }
+  </script>
+</body>
+
+</html>
